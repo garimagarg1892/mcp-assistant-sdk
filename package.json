@@ -1,0 +1,35 @@
+{
+  "name": "mcp-assistant-sdk",
+  "version": "2.2.0",
+  "description": "AI-powered S3 assistant with natural language processing for MCP",
+  "main": "mcp-server.js",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.878.0",
+    "@modelcontextprotocol/sdk": "^1.17.4",
+    "dotenv": "^17.2.1"
+  },
+  "scripts": {
+    "start": "node mcp-server.js",
+    "mcp-server": "node mcp-server.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "mcp",
+    "s3",
+    "aws",
+    "ai",
+    "assistant",
+    "natural-language",
+    "cursor",
+    "vscode"
+  ],
+  "author": "Garima Garg",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/garimagarg1892/mcp-assistant-sdk.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

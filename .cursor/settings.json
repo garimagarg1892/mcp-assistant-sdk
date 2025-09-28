@@ -1,0 +1,14 @@
+{
+  "mcp.servers": {
+    "s3-assistant": {
+      "command": "node",
+      "args": ["/home/garima.garg/mcp-assistant-sdk/mcp-server.js"],
+      "env": {
+        "AWS_ACCESS_KEY_ID": "poseidon_access",
+        "AWS_SECRET_ACCESS_KEY": "poseidon_secret",
+        "AWS_REGION": "us-east-1",
+        "S3_ENDPOINT": "http://localhost:7200"
+      }
+    }
+  }
+}
