@@ -14,6 +14,9 @@ const getObject = require('./tools/getObject');
 const readFile = require('./tools/readFile');
 const listDirectory = require('./tools/listDirectory');
 
+// Import MySQL bridge tool
+const exportTableToStorage = require('./tools/exportTableToStorage');
+
 // Load environment variables
 require('dotenv').config();
 
@@ -386,6 +389,83 @@ OPTIONAL PARAMETERS:
               additionalProperties: true
             },
           },
+          {
+            name: 'export_table_to_storage',
+            description: `Export MySQL table data to S3/ObjectStore via MCP bridge.
+
+🌉 MCP BRIDGE INTELLIGENCE:
+This tool connects MySQL MCP with your S3 MCP to create a seamless data pipeline.
+
+📋 PARAMETER MAPPING GUIDE:
+
+REQUIRED:
+- tableName: String - Name of the MySQL table to export
+- bucketName: String - Target S3 bucket name
+
+MYSQL CONNECTION (optional - uses env vars if not provided):
+- mysqlHost: String - MySQL server host (default: localhost)
+- mysqlPort: Integer - MySQL server port (default: 3306)  
+- mysqlUser: String - MySQL username (default: root)
+- mysqlPassword: String - MySQL password
+- mysqlDatabase: String - MySQL database name
+
+QUERY OPTIONS (optional):
+- where: String - WHERE clause for filtering data
+- orderBy: String - ORDER BY clause for sorting
+- limit: Integer - LIMIT number of records
+
+OUTPUT OPTIONS (optional):
+- format: "json" | "csv" | "jsonl" (default: json)
+- fileName: String - Custom output filename
+- prettyFormat: Boolean - Pretty print JSON (default: true)
+- csvDelimiter: String - CSV delimiter (default: comma)
+
+S3 OPTIONS (optional - same as putObject):
+- s3Prefix: String - S3 object prefix
+- acl: String - S3 access control
+- serverSideEncryption: String - Encryption type
+- storageClass: String - S3 storage class
+- metadata: Object - Custom metadata
+
+🎯 EXAMPLES:
+"Export users table to my-bucket" → { tableName: "users", bucketName: "my-bucket" }
+"Export products as CSV to backup-bucket" → { tableName: "products", bucketName: "backup-bucket", format: "csv" }
+"Export recent orders to archive" → { tableName: "orders", bucketName: "archive", where: "created_date > '2024-01-01'" }
+
+✨ FEATURES:
+- Automatic MySQL MCP communication
+- Multiple export formats (JSON, CSV, JSONL)
+- Query filtering and sorting
+- Seamless S3 upload via existing putObject
+- Comprehensive metadata tracking
+
+⚠️ REQUIREMENTS:
+- MySQL MCP server must be installed and accessible
+- Valid MySQL connection parameters (via env or params)
+- Target S3 bucket must exist
+
+Pass all extracted parameters as a flat object.`,
+            inputSchema: {
+              type: 'object',
+              properties: {
+                tableName: { type: 'string', description: 'MySQL table name to export' },
+                bucketName: { type: 'string', description: 'Target S3 bucket name' },
+                mysqlHost: { type: 'string', description: 'MySQL server host' },
+                mysqlPort: { type: 'integer', description: 'MySQL server port' },
+                mysqlUser: { type: 'string', description: 'MySQL username' },
+                mysqlPassword: { type: 'string', description: 'MySQL password' },
+                mysqlDatabase: { type: 'string', description: 'MySQL database name' },
+                where: { type: 'string', description: 'WHERE clause for filtering' },
+                orderBy: { type: 'string', description: 'ORDER BY clause' },
+                limit: { type: 'integer', description: 'LIMIT number of records' },
+                format: { type: 'string', description: 'Output format (json, csv, jsonl)' },
+                fileName: { type: 'string', description: 'Custom output filename' },
+                s3Prefix: { type: 'string', description: 'S3 object prefix' }
+              },
+              required: ['tableName', 'bucketName'],
+              additionalProperties: true
+            },
+          },
         ],
       };
     });
@@ -426,6 +506,11 @@ OPTIONAL PARAMETERS:
           case 'list_directory':
             // File system tool - browse directories
             result = await listDirectory(args);
+            break;
+            
+          case 'export_table_to_storage':
+            // MySQL MCP bridge tool - export table data to S3
+            result = await exportTableToStorage(args);
             break;
             
           default:
