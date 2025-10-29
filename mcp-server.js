@@ -24,6 +24,10 @@ const listDirectory = require("./tools/listDirectory");
 // Import MySQL bridge tool
 const exportTableToStorage = require("./tools/exportTableToStorage");
 
+// Import new web scraping and file writing tools
+const scrapeWebsiteToFile = require("./tools/scrapeWebsiteToFile");
+const writeTextToFile = require("./tools/writeTextToFile");
+
 // Load environment variables
 require("dotenv").config();
 
@@ -399,6 +403,32 @@ REQUIRED:
 
 🎯 EXAMPLES:
 "Read the file /home/user/document.pdf" → { filePath: "/home/user/document.pdf" }
+"Show me the contents of config.json" → { filePath: "config.json" }
+"What's in that image file?" → { filePath: "image.jpg" }
+
+✨ FEATURES:
+- Automatic binary/text detection
+- Proper encoding handling (base64 for binary, utf8 for text)
+- Content type detection from file extension
+- File metadata (size, modified date, etc.)
+- Support for all file types (images, documents, code, etc.)
+
+⚠️ ERROR HANDLING:
+- File not found: Clear error message with file path
+- Permission denied: Helpful access error information
+- Invalid path: Path validation and suggestions`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                filePath: {
+                  type: "string",
+                  description: "Path to the file to read",
+                },
+              },
+              required: ["filePath"],
+              additionalProperties: true,
+            },
+          },
           {
             name: "delete_object",
             description: `Delete an object from S3 bucket with versioning and governance support.
@@ -480,32 +510,6 @@ Pass all extracted parameters as a flat object.`,
                 },
               },
               required: ["bucketName", "fileName"],
-              additionalProperties: true,
-            },
-          },
-"Show me the contents of config.json" → { filePath: "config.json" }
-"What's in that image file?" → { filePath: "image.jpg" }
-
-✨ FEATURES:
-- Automatic binary/text detection
-- Proper encoding handling (base64 for binary, utf8 for text)
-- Content type detection from file extension
-- File metadata (size, modified date, etc.)
-- Support for all file types (images, documents, code, etc.)
-
-⚠️ ERROR HANDLING:
-- File not found: Clear error message with file path
-- Permission denied: Helpful access error information
-- Invalid path: Path validation and suggestions`,
-            inputSchema: {
-              type: "object",
-              properties: {
-                filePath: {
-                  type: "string",
-                  description: "Path to the file to read",
-                },
-              },
-              required: ["filePath"],
               additionalProperties: true,
             },
           },
@@ -675,6 +679,222 @@ Pass all extracted parameters as a flat object.`,
               additionalProperties: true,
             },
           },
+          {
+            name: "scrape_website_to_file",
+            description: `Scrape a website, save content to a local file, then upload to S3.
+
+🧠 PARAMETER EXTRACTION INTELLIGENCE:
+Extract web scraping, file saving, and S3 upload parameters from natural language requests.
+
+📋 PARAMETER MAPPING GUIDE:
+
+REQUIRED:
+- url: String - Website URL to scrape (http:// or https://)
+- localFilePath: String - Local file path to save scraped content
+- bucketName: String - Target S3 bucket name
+
+OPTIONAL PARAMETERS:
+
+🌐 SCRAPING OPTIONS:
+- requestHeaders: Object - Custom HTTP headers for the request
+  → From: "with authentication header", "custom headers", "add user agent"
+  → Example: { "Authorization": "Bearer token", "Custom-Header": "value" }
+
+💾 FILE OPTIONS:
+- keepLocalFile: Boolean - Keep local file after upload (default: false)
+  → From: "keep the file", "don't delete local", "preserve local copy"
+  → Default: false (file is deleted after successful upload)
+
+☁️  S3 OPTIONS:
+- s3Key: String - Custom S3 object key (default: filename from localFilePath)
+- contentType: String - MIME type (default: auto-detected from scraped response)
+- acl: "private" | "public-read" | "public-read-write" | "authenticated-read"
+- serverSideEncryption: "AES256" | "aws:kms" | "aws:kms:dsse"
+- storageClass: "STANDARD" | "STANDARD_IA" | "GLACIER" | "DEEP_ARCHIVE"
+- metadata: Object - Custom metadata key-value pairs
+
+🎯 EXAMPLES:
+"Scrape https://example.com and save to /tmp/example.html then upload to my-bucket" 
+  → { url: "https://example.com", localFilePath: "/tmp/example.html", bucketName: "my-bucket" }
+
+"Scrape https://api.example.com with auth header and keep local file" 
+  → { url: "https://api.example.com", localFilePath: "/tmp/data.json", bucketName: "my-bucket", 
+      requestHeaders: { "Authorization": "Bearer token" }, keepLocalFile: true }
+
+"Scrape website and upload to S3 with custom key" 
+  → { url: "https://example.com", localFilePath: "/tmp/page.html", bucketName: "my-bucket", 
+      s3Key: "scraped/page-2024.html" }
+
+✨ FEATURES:
+- Automatic redirect following (HTTP 3xx)
+- Timeout protection (30 seconds)
+- User-Agent spoofing for better compatibility
+- Auto-cleanup of local file (optional)
+- Full S3 upload customization
+- Binary and text content support
+
+⚠️ ERROR HANDLING:
+- Invalid URL: Clear error message with URL validation
+- HTTP errors: Includes status code and message
+- File write errors: Permission and path validation
+- S3 upload errors: Detailed AWS error information
+
+Pass all extracted parameters as a flat object.`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                url: {
+                  type: "string",
+                  description: "Website URL to scrape",
+                },
+                localFilePath: {
+                  type: "string",
+                  description: "Local file path to save scraped content",
+                },
+                bucketName: {
+                  type: "string",
+                  description: "Target S3 bucket name",
+                },
+                s3Key: {
+                  type: "string",
+                  description: "Custom S3 object key",
+                },
+                keepLocalFile: {
+                  type: "boolean",
+                  description: "Keep local file after upload",
+                },
+                requestHeaders: {
+                  type: "object",
+                  description: "Custom HTTP headers for scraping",
+                },
+                contentType: {
+                  type: "string",
+                  description: "MIME type for S3 upload",
+                },
+              },
+              required: ["url", "localFilePath", "bucketName"],
+              additionalProperties: true,
+            },
+          },
+          {
+            name: "write_text_to_file",
+            description: `Write text content to a local file, then upload to S3.
+
+🧠 PARAMETER EXTRACTION INTELLIGENCE:
+Extract text content, file path, and S3 upload parameters from natural language requests.
+
+📋 PARAMETER MAPPING GUIDE:
+
+REQUIRED:
+- textContent: String - Text content to write to file
+- localFilePath: String - Local file path to create/write
+- bucketName: String - Target S3 bucket name
+
+OPTIONAL PARAMETERS:
+
+📝 FILE WRITING OPTIONS:
+- appendMode: Boolean - Append to file instead of overwrite (default: false)
+  → From: "append to file", "add to existing", "don't overwrite"
+  → Default: false (overwrites existing file)
+
+- encoding: String - File encoding (default: utf8)
+  → From: "ascii encoding", "utf16 format", "latin1"
+  → Common values: "utf8", "ascii", "utf16le", "latin1"
+  → Default: "utf8"
+
+- keepLocalFile: Boolean - Keep local file after upload (default: false)
+  → From: "keep the file", "don't delete local", "preserve local copy"
+  → Default: false (file is deleted after successful upload)
+
+☁️  S3 OPTIONS:
+- s3Key: String - Custom S3 object key (default: filename from localFilePath)
+- contentType: String - MIME type (default: auto-detected from file extension)
+- acl: "private" | "public-read" | "public-read-write" | "authenticated-read"
+- serverSideEncryption: "AES256" | "aws:kms" | "aws:kms:dsse"
+- storageClass: "STANDARD" | "STANDARD_IA" | "GLACIER" | "DEEP_ARCHIVE"
+- metadata: Object - Custom metadata key-value pairs
+
+🎯 EXAMPLES:
+"Write 'Hello World' to /tmp/hello.txt and upload to my-bucket" 
+  → { textContent: "Hello World", localFilePath: "/tmp/hello.txt", bucketName: "my-bucket" }
+
+"Create JSON file with data and keep local copy" 
+  → { textContent: '{"key": "value"}', localFilePath: "/tmp/data.json", bucketName: "my-bucket", 
+      keepLocalFile: true }
+
+"Append log entry to file and upload" 
+  → { textContent: "New log entry\\n", localFilePath: "/tmp/app.log", bucketName: "logs-bucket", 
+      appendMode: true }
+
+"Write config file with custom S3 key and encryption" 
+  → { textContent: "config=value", localFilePath: "/tmp/config.txt", bucketName: "my-bucket", 
+      s3Key: "configs/app-config.txt", serverSideEncryption: "AES256" }
+
+✨ FEATURES:
+- Automatic directory creation (creates parent directories if needed)
+- Append or overwrite modes
+- Multiple encoding support
+- Auto-cleanup of local file (optional)
+- Content type auto-detection from file extension
+- Full S3 upload customization
+
+🎨 CONTENT TYPE AUTO-DETECTION:
+- .txt → text/plain
+- .json → application/json
+- .xml → application/xml
+- .html → text/html
+- .css → text/css
+- .js → application/javascript
+- .md → text/markdown
+- .csv → text/csv
+
+⚠️ ERROR HANDLING:
+- Missing text content: Clear validation error
+- File write errors: Permission and path validation
+- S3 upload errors: Detailed AWS error information
+- Directory creation errors: Full error context
+
+Pass all extracted parameters as a flat object.`,
+            inputSchema: {
+              type: "object",
+              properties: {
+                textContent: {
+                  type: "string",
+                  description: "Text content to write to file",
+                },
+                localFilePath: {
+                  type: "string",
+                  description: "Local file path to create/write",
+                },
+                bucketName: {
+                  type: "string",
+                  description: "Target S3 bucket name",
+                },
+                s3Key: {
+                  type: "string",
+                  description: "Custom S3 object key",
+                },
+                appendMode: {
+                  type: "boolean",
+                  description: "Append to file instead of overwrite",
+                },
+                keepLocalFile: {
+                  type: "boolean",
+                  description: "Keep local file after upload",
+                },
+                encoding: {
+                  type: "string",
+                  description: "File encoding (default: utf8)",
+                },
+                contentType: {
+                  type: "string",
+                  description: "MIME type for S3 upload",
+                },
+              },
+              required: ["textContent", "localFilePath", "bucketName"],
+              additionalProperties: true,
+            },
+          },
         ],
       };
     });
@@ -730,6 +950,16 @@ Pass all extracted parameters as a flat object.`,
           case "export_table_to_storage":
             // MySQL MCP bridge tool - export table data to S3
             result = await exportTableToStorage(args);
+            break;
+
+          case "scrape_website_to_file":
+            // Web scraping tool - scrape website, save to file, upload to S3
+            result = await scrapeWebsiteToFile(args);
+            break;
+
+          case "write_text_to_file":
+            // Write text to file tool - write text to file, upload to S3
+            result = await writeTextToFile(args);
             break;
 
           default:
